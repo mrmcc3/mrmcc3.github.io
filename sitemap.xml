@@ -3,7 +3,13 @@
   
   <url>
     <loc>https://mrmcc3.github.io/</loc>
+    <lastmod>2016-06-06T12:59:50+10:00</lastmod>
     <priority>0</priority>
+  </url>
+  
+  <url>
+    <loc>https://mrmcc3.github.io/post/test/</loc>
+    <lastmod>2016-06-06T12:59:50+10:00</lastmod>
   </url>
   
 </urlset>
