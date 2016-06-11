@@ -3,6 +3,16 @@
   
   <url>
     <loc>https://mrmcc3.github.io/</loc>
+    <lastmod>2016-06-11T00:00:00+00:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>https://mrmcc3.github.io/post/csv-with-clojurescript/</loc>
+    <lastmod>2016-06-11T00:00:00+00:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>https://mrmcc3.github.io/about/</loc>
   </url>
   
 </urlset>
