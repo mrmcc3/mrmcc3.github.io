@@ -1,0 +1,134 @@
+<!doctype html>
+<html lang="en">
+  <head>
+  <meta charset="utf-8">
+  <meta http-equiv="x-ua-compatible" content="ie=edge">
+  <title>Reading configuration with Aero</title>
+  <meta name="author" content="Michael McClintock">
+  <meta name="description" content="">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link href='https://fonts.googleapis.com/css?family=Muli|Source+Code+Pro' rel='stylesheet' type='text/css'>
+  <link rel="stylesheet" href="/compiled-css/main.css">
+</head>
+
+  <body class="site">
+    <nav class="site-nav">
+  <a class="site-nav-item" href="/">mrmcc3</a>
+  <a class="site-nav-item" href="/about">about</a>
+  <a class="site-nav-spacer"></a>
+  <a class="site-nav-item" href="https://github.com/mrmcc3"><i class="fa fa-github"></i></a>
+  <a class="site-nav-item" href="https://twitter.com/mrmcc3"><i class="fa fa-twitter"></i></a>
+  <a class="site-nav-item" href="/post/index.xml"><i class="fa fa-feed"></i></a>
+</nav>
+
+    <section class="post text-justify">
+      <h3 class="title">Reading configuration with Aero</h1>
+      <span class="date">20-Jun-2016</span>
+      <article class="content">
+         
+
+<p><a href="https://github.com/juxt/aero">Aero</a> is a nice configuration library for clojure. Its <a href="https://github.com/juxt/aero/blob/master/README.md">README</a> does a good job describing
+its motivations and design goals. Here&rsquo;s how I&rsquo;d describe it</p>
+
+<blockquote>
+<p>Aero provides a library for reading config as EDN with added logic for a small set of
+tag literals that <strong>make sense</strong> for configuration.</p>
+</blockquote>
+
+<p>Reading some aero config is a simple as <code>(read-config source)</code> where the source can be anything that
+<code>clojure.java.io/reader</code> supports (InputStream, File, URI, String etc). Here&rsquo;s an example</p>
+<div class="highlight"><pre><code class="language-clojure" data-lang="clojure"><span></span><span class="c1">;; config.edn</span>
+<span class="p">{</span><span class="ss">:port</span> <span class="o">#</span><span class="nb">or </span><span class="p">[</span><span class="o">#</span><span class="nv">env</span> <span class="nv">PORT</span> <span class="mi">8080</span><span class="p">]}</span>
+
+<span class="p">(</span><span class="nf">read-config</span> <span class="s">&quot;config.edn&quot;</span><span class="p">)</span>
+<span class="c1">;; =&gt; {:port 8080}</span>
+</code></pre></div>
+
+<p>It&rsquo;s pretty <strong>obvious</strong> that this bit of EDN, when read, should result in a map where
+the <code>:port</code> value will take on the value of the <code>PORT</code> environment variable if it exists
+otherwise it&rsquo;ll be <code>8080</code>. From this snippet we can see two of the tag literals
+that aero supports <code>#or</code> and <code>#env</code>.</p>
+
+<h4 id="profiles">Profiles</h4>
+
+<p>When we configure our applications and tools more often than not we need the
+configuration to control the behavior for a multiple set of circumstances.
+The classic example is dev, staging and production environments. Aeros solution
+is the <code>#profile</code> tag. Here&rsquo;s an example</p>
+<div class="highlight"><pre><code class="language-clojure" data-lang="clojure"><span></span><span class="c1">;; config.edn</span>
+<span class="p">{</span><span class="ss">:port</span> <span class="o">#</span><span class="nv">profile</span> <span class="p">{</span><span class="ss">:prod</span> <span class="mi">9000</span> <span class="ss">:stage</span> <span class="mi">8000</span> <span class="ss">:default</span> <span class="mi">8080</span><span class="p">}}</span>
+
+<span class="p">(</span><span class="nf">read-config</span> <span class="s">&quot;config.edn&quot;</span><span class="p">)</span>                   <span class="c1">;; =&gt; {:port 8080}</span>
+<span class="p">(</span><span class="nf">read-config</span> <span class="s">&quot;config.edn&quot;</span> <span class="p">{</span><span class="ss">:profile</span> <span class="ss">:qa</span><span class="p">})</span>    <span class="c1">;; =&gt; {:port 8080}</span>
+<span class="p">(</span><span class="nf">read-config</span> <span class="s">&quot;config.edn&quot;</span> <span class="p">{</span><span class="ss">:profile</span> <span class="ss">:prod</span><span class="p">})</span>  <span class="c1">;; =&gt; {:port 9000}</span>
+<span class="p">(</span><span class="nf">read-config</span> <span class="s">&quot;config.edn&quot;</span> <span class="p">{</span><span class="ss">:profile</span> <span class="ss">:stage</span><span class="p">})</span> <span class="c1">;; =&gt; {:port 8000}</span>
+</code></pre></div>
+
+<blockquote>
+<p>Note: this isn&rsquo;t just useful for server config we can use it for our tools as well. Have
+you ever configured the clojurescript compiler with multiple builds that are
+essentially the same? why not use Aero?</p>
+</blockquote>
+
+<h4 id="including-more-config">Including more config</h4>
+
+<p>One of the more interesting tag literals is <code>#include</code> which essentially takes the tagged
+value and passes it back to <code>read-config</code> as the <code>source</code> for further reading (as EDN). Nice! This means
+we could split up config into multiple files. One case where this is helpful is secret
+storage. We shouldn&rsquo;t keep our secrets (API keys etc.) in source control alongside other
+config. Instead we can include them from another location.</p>
+
+<p><code>{:secrets #include &quot;.secrets.edn&quot;}</code></p>
+
+<p>But one question arises pretty quickly. Include <code>&quot;.secrets.edn&quot;</code> relative to what?
+The project directory? The file it was included from? The classpath? (for jars). Remember
+<code>read-config</code> requires the source to be compatible with <code>clojure.java.io/reader</code>. What if
+we wanted to include files through some other mechanism? Or what if we wanted to read in some
+other format like json?</p>
+
+<p>Aero use the concept of a resolver which is just a function responsible for transforming the
+<code>#include</code> value into a valid source for <code>read-config</code>. The default resolver will attempt to
+resolve paths as files relative to the source it was included from. You can specify your own
+include resolver in the options passed to <code>read-config</code>.</p>
+
+<h4 id="conclusion">Conclusion</h4>
+
+<p>I like Aero because it makes configuration obvious. It&rsquo;s just EDN with some extra leverage
+for common configuration tasks (env variables, profiles, etc.). For more on Aero check out
+the <a href="https://github.com/juxt/aero/blob/master/README.md">README</a> which covers all the tag literals, extensibility, references
+and some recommended usage patterns.</p>
+
+      </article>
+    </section>
+    
+      <div id="disqus_thread"></div>
+<script type="text/javascript">
+    var disqus_shortname = 'mrmcc3';
+    var disqus_identifier = 'https:\/\/mrmcc3.github.io\/post\/aero-config\/';
+    var disqus_title = 'Reading configuration with Aero';
+    var disqus_url = 'https:\/\/mrmcc3.github.io\/post\/aero-config\/';
+
+    (function() {
+        var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+        dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+        (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+    })();
+</script>
+<noscript>Please enable JavaScript to view the <a href="http://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+<a href="http://disqus.com" class="dsq-brlink">comments powered by <span class="logo-disqus">Disqus</span></a>
+    
+    <div class="copyright">
+      This work is licensed under a Creative Commons Attribution-ShareAlike 4.0 International License.
+    </div>
+    
+      
+<script>
+window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+ga('create', 'UA-79200627-1', 'auto');
+ga('send', 'pageview');
+</script>
+<script async src='//www.google-analytics.com/analytics.js'></script>
+
+    
+  </body>
+</html>

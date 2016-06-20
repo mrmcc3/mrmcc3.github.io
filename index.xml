@@ -7,8 +7,89 @@
     <generator>Hugo -- gohugo.io</generator>
     <language>en-us</language>
     <copyright>This work is licensed under a Creative Commons Attribution-ShareAlike 4.0 International License.</copyright>
-    <lastBuildDate>Sat, 11 Jun 2016 00:00:00 +0000</lastBuildDate>
+    <lastBuildDate>Mon, 20 Jun 2016 00:00:00 +0000</lastBuildDate>
     <atom:link href="https://mrmcc3.github.io/index.xml" rel="self" type="application/rss+xml" />
+    
+    <item>
+      <title>Reading configuration with Aero</title>
+      <link>https://mrmcc3.github.io/post/aero-config/</link>
+      <pubDate>Mon, 20 Jun 2016 00:00:00 +0000</pubDate>
+      
+      <guid>https://mrmcc3.github.io/post/aero-config/</guid>
+      <description>
+
+&lt;p&gt;&lt;a href=&#34;https://github.com/juxt/aero&#34;&gt;Aero&lt;/a&gt; is a nice configuration library for clojure. Its &lt;a href=&#34;https://github.com/juxt/aero/blob/master/README.md&#34;&gt;README&lt;/a&gt; does a good job describing
+its motivations and design goals. Here&amp;rsquo;s how I&amp;rsquo;d describe it&lt;/p&gt;
+
+&lt;blockquote&gt;
+&lt;p&gt;Aero provides a library for reading config as EDN with added logic for a small set of
+tag literals that &lt;strong&gt;make sense&lt;/strong&gt; for configuration.&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;p&gt;Reading some aero config is a simple as &lt;code&gt;(read-config source)&lt;/code&gt; where the source can be anything that
+&lt;code&gt;clojure.java.io/reader&lt;/code&gt; supports (InputStream, File, URI, String etc). Here&amp;rsquo;s an example&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre&gt;&lt;code class=&#34;language-clojure&#34; data-lang=&#34;clojure&#34;&gt;&lt;span&gt;&lt;/span&gt;&lt;span class=&#34;c1&#34;&gt;;; config.edn&lt;/span&gt;
+&lt;span class=&#34;p&#34;&gt;{&lt;/span&gt;&lt;span class=&#34;ss&#34;&gt;:port&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;#&lt;/span&gt;&lt;span class=&#34;nb&#34;&gt;or &lt;/span&gt;&lt;span class=&#34;p&#34;&gt;[&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;#&lt;/span&gt;&lt;span class=&#34;nv&#34;&gt;env&lt;/span&gt; &lt;span class=&#34;nv&#34;&gt;PORT&lt;/span&gt; &lt;span class=&#34;mi&#34;&gt;8080&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;]}&lt;/span&gt;
+
+&lt;span class=&#34;p&#34;&gt;(&lt;/span&gt;&lt;span class=&#34;nf&#34;&gt;read-config&lt;/span&gt; &lt;span class=&#34;s&#34;&gt;&amp;quot;config.edn&amp;quot;&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;)&lt;/span&gt;
+&lt;span class=&#34;c1&#34;&gt;;; =&amp;gt; {:port 8080}&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+
+&lt;p&gt;It&amp;rsquo;s pretty &lt;strong&gt;obvious&lt;/strong&gt; that this bit of EDN, when read, should result in a map where
+the &lt;code&gt;:port&lt;/code&gt; value will take on the value of the &lt;code&gt;PORT&lt;/code&gt; environment variable if it exists
+otherwise it&amp;rsquo;ll be &lt;code&gt;8080&lt;/code&gt;. From this snippet we can see two of the tag literals
+that aero supports &lt;code&gt;#or&lt;/code&gt; and &lt;code&gt;#env&lt;/code&gt;.&lt;/p&gt;
+
+&lt;h4 id=&#34;profiles&#34;&gt;Profiles&lt;/h4&gt;
+
+&lt;p&gt;When we configure our applications and tools more often than not we need the
+configuration to control the behavior for a multiple set of circumstances.
+The classic example is dev, staging and production environments. Aeros solution
+is the &lt;code&gt;#profile&lt;/code&gt; tag. Here&amp;rsquo;s an example&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre&gt;&lt;code class=&#34;language-clojure&#34; data-lang=&#34;clojure&#34;&gt;&lt;span&gt;&lt;/span&gt;&lt;span class=&#34;c1&#34;&gt;;; config.edn&lt;/span&gt;
+&lt;span class=&#34;p&#34;&gt;{&lt;/span&gt;&lt;span class=&#34;ss&#34;&gt;:port&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;#&lt;/span&gt;&lt;span class=&#34;nv&#34;&gt;profile&lt;/span&gt; &lt;span class=&#34;p&#34;&gt;{&lt;/span&gt;&lt;span class=&#34;ss&#34;&gt;:prod&lt;/span&gt; &lt;span class=&#34;mi&#34;&gt;9000&lt;/span&gt; &lt;span class=&#34;ss&#34;&gt;:stage&lt;/span&gt; &lt;span class=&#34;mi&#34;&gt;8000&lt;/span&gt; &lt;span class=&#34;ss&#34;&gt;:default&lt;/span&gt; &lt;span class=&#34;mi&#34;&gt;8080&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;}}&lt;/span&gt;
+
+&lt;span class=&#34;p&#34;&gt;(&lt;/span&gt;&lt;span class=&#34;nf&#34;&gt;read-config&lt;/span&gt; &lt;span class=&#34;s&#34;&gt;&amp;quot;config.edn&amp;quot;&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;)&lt;/span&gt;                   &lt;span class=&#34;c1&#34;&gt;;; =&amp;gt; {:port 8080}&lt;/span&gt;
+&lt;span class=&#34;p&#34;&gt;(&lt;/span&gt;&lt;span class=&#34;nf&#34;&gt;read-config&lt;/span&gt; &lt;span class=&#34;s&#34;&gt;&amp;quot;config.edn&amp;quot;&lt;/span&gt; &lt;span class=&#34;p&#34;&gt;{&lt;/span&gt;&lt;span class=&#34;ss&#34;&gt;:profile&lt;/span&gt; &lt;span class=&#34;ss&#34;&gt;:qa&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;})&lt;/span&gt;    &lt;span class=&#34;c1&#34;&gt;;; =&amp;gt; {:port 8080}&lt;/span&gt;
+&lt;span class=&#34;p&#34;&gt;(&lt;/span&gt;&lt;span class=&#34;nf&#34;&gt;read-config&lt;/span&gt; &lt;span class=&#34;s&#34;&gt;&amp;quot;config.edn&amp;quot;&lt;/span&gt; &lt;span class=&#34;p&#34;&gt;{&lt;/span&gt;&lt;span class=&#34;ss&#34;&gt;:profile&lt;/span&gt; &lt;span class=&#34;ss&#34;&gt;:prod&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;})&lt;/span&gt;  &lt;span class=&#34;c1&#34;&gt;;; =&amp;gt; {:port 9000}&lt;/span&gt;
+&lt;span class=&#34;p&#34;&gt;(&lt;/span&gt;&lt;span class=&#34;nf&#34;&gt;read-config&lt;/span&gt; &lt;span class=&#34;s&#34;&gt;&amp;quot;config.edn&amp;quot;&lt;/span&gt; &lt;span class=&#34;p&#34;&gt;{&lt;/span&gt;&lt;span class=&#34;ss&#34;&gt;:profile&lt;/span&gt; &lt;span class=&#34;ss&#34;&gt;:stage&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;})&lt;/span&gt; &lt;span class=&#34;c1&#34;&gt;;; =&amp;gt; {:port 8000}&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+
+&lt;blockquote&gt;
+&lt;p&gt;Note: this isn&amp;rsquo;t just useful for server config we can use it for our tools as well. Have
+you ever configured the clojurescript compiler with multiple builds that are
+essentially the same? why not use Aero?&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;h4 id=&#34;including-more-config&#34;&gt;Including more config&lt;/h4&gt;
+
+&lt;p&gt;One of the more interesting tag literals is &lt;code&gt;#include&lt;/code&gt; which essentially takes the tagged
+value and passes it back to &lt;code&gt;read-config&lt;/code&gt; as the &lt;code&gt;source&lt;/code&gt; for further reading (as EDN). Nice! This means
+we could split up config into multiple files. One case where this is helpful is secret
+storage. We shouldn&amp;rsquo;t keep our secrets (API keys etc.) in source control alongside other
+config. Instead we can include them from another location.&lt;/p&gt;
+
+&lt;p&gt;&lt;code&gt;{:secrets #include &amp;quot;.secrets.edn&amp;quot;}&lt;/code&gt;&lt;/p&gt;
+
+&lt;p&gt;But one question arises pretty quickly. Include &lt;code&gt;&amp;quot;.secrets.edn&amp;quot;&lt;/code&gt; relative to what?
+The project directory? The file it was included from? The classpath? (for jars). Remember
+&lt;code&gt;read-config&lt;/code&gt; requires the source to be compatible with &lt;code&gt;clojure.java.io/reader&lt;/code&gt;. What if
+we wanted to include files through some other mechanism? Or what if we wanted to read in some
+other format like json?&lt;/p&gt;
+
+&lt;p&gt;Aero use the concept of a resolver which is just a function responsible for transforming the
+&lt;code&gt;#include&lt;/code&gt; value into a valid source for &lt;code&gt;read-config&lt;/code&gt;. The default resolver will attempt to
+resolve paths as files relative to the source it was included from. You can specify your own
+include resolver in the options passed to &lt;code&gt;read-config&lt;/code&gt;.&lt;/p&gt;
+
+&lt;h4 id=&#34;conclusion&#34;&gt;Conclusion&lt;/h4&gt;
+
+&lt;p&gt;I like Aero because it makes configuration obvious. It&amp;rsquo;s just EDN with some extra leverage
+for common configuration tasks (env variables, profiles, etc.). For more on Aero check out
+the &lt;a href=&#34;https://github.com/juxt/aero/blob/master/README.md&#34;&gt;README&lt;/a&gt; which covers all the tag literals, extensibility, references
+and some recommended usage patterns.&lt;/p&gt;
+</description>
+    </item>
     
     <item>
       <title>Upload and parse CSV in ClojureScript</title>
@@ -155,7 +236,7 @@ and printing.&lt;/p&gt;
     </item>
     
     <item>
-      <title></title>
+      <title>about</title>
       <link>https://mrmcc3.github.io/about/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
